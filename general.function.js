@@ -1,4 +1,7 @@
 /* 	
+	Version 3.1
+		-- Add Cookie mgmt functions
+
 	Version 3.0
 		-- Let update the major version to commit all little change since 2.0.
 		-- Since this version, a regulated check-in check-out of GIT is made.
@@ -347,6 +350,31 @@ function formatDate(unixTimeStamp) {
 	var strTime = hours + ':' + minutes + ' ' + ampm;
 	
 	return date.getMonth()+1 + "/" + date.getDate() + "/" + date.getFullYear() + "  " + strTime;
+}
+
+
+// Cookies Management
+function addCookie(prefix, name, value, never_expire) {
+	if (never_expire == true)
+		document.cookie = prefix + "_" + name + "=" + value +"; expires=Fri, 31 Dec 9999 23:59:59 GMT";
+	else
+		document.cookie = prefix + "_" + name + "=" + value;
+}
+
+function deleteCookie(prefix, name) {
+	document.cookie = prefix + "_" + name + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+}
+
+function getCookie(prefix, name) {
+	var tmpI = null;		
+	var tmpC = document.cookie;
+	tmpC = tmpC.split(";");
+	for(var i=0; i<tmpC.length; i++) {
+		tmpI = tmpC[i].split("=");			
+		if (tmpI[0].trim() == prefix + "_" + name)
+			return tmpI[1];
+	}
+	return null;
 }
 
 
