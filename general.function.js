@@ -6,12 +6,17 @@
 		-- Let update the major version to commit all little change since 2.0.
 		-- Since this version, a regulated check-in check-out of GIT is made.
 
+	Version 2.5
+		-- Modify obj function so you can bind obj to existing DOMElement.
+
 	Version 2.4
-		-- Modify obj function to accept undefined and null.
 		-- Add time2TimeAgo
 		-- Add showToastMessage
 		-- Add obj.destroy
 
+	Version 2.3.1
+		-- Fix obj.addObject to return this.
+		
 	Version 2.3
 		-- Modify obj.addTo to accespt object and string.
 		-- Add function obj.addObject
@@ -86,13 +91,6 @@ function $class(classname) {
 
 /*	Function obj()
 	Create a new object of the defined type with the defined id and className
-	
-	You can then use the methods:
-		- .addTo(parent)			Add this object to a parent.
-		- .addObject(object)		Add an object to this object as a chiled.
-		- .setValue(text)			Add a value as HTML in the balise.
-		- .setAttr(name, value)		Add an attribute to the balise.
-	
 	return: The created object
 	
 	Change log:
@@ -100,11 +98,17 @@ function $class(classname) {
 */
 function obj(type, id, className) {
 	
-	var d = document.createElement(type);
+
+	// 2.6 check if the element already exist.
+	if (!$id(id))
+		var d = document.createElement(type);
+	else
+		var d = $id(id);
+
 	
-	if ((id != undefined) && (id != null))
+	if (id != undefined)
 		d.id = id;
-	if ((className != undefined)  && (className != null))
+	if (className != undefined)
 		d.className = className;
 	
 	d.addTo = function(parent) {
@@ -118,6 +122,7 @@ function obj(type, id, className) {
 	
 	d.addObject = function(xObj) {
 		this.appendChild(xObj)
+		return this;
 	}
 	
 	d.setValue = function(text) {
@@ -139,10 +144,8 @@ function obj(type, id, className) {
 		this.parentNode.removeChild(this);
 		return this;
 	}
+	
 	return d;
-}
-function div(id, className) {	
-	return obj("div", id, className);
 }
 
 
@@ -167,6 +170,25 @@ function is_int(v) {
 	return false;
 }
 
+function getUrlVars() {
+    var vars = {};
+    var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
+        vars[key] = value;
+    });
+    return vars;
+}
+
+function defaultVar(v, d) {
+	
+	if (d == undefined)
+		d = "";
+	
+	if ((v == undefined) || (v == ''))
+		return d;
+	
+	return v;
+	
+}
 
 function objShow(id) {		
 	$id(id).style.display = "block";
@@ -175,36 +197,35 @@ function objHide(id) {
 	$id(id).style.display = "none";
 }
 
-
-function clearTableRow(tableId) {
-	if ($id(tableId).getElementsByTagName("tbody").length > 0)
-		$id(tableId).getElementsByTagName("tbody")[0].innerHTML = "";
-	else
-		$id(tableId).innerHTML = "";
+function purgeTable(tableId, limitRow, removeTop) {
+	var t = $id(tableId).rows.length;
+	if (t > limitRow) {
+		y = t - limitRow;
+		for (it=0; it<y; it++) {
+			$id(tableId).deleteRow((removeTop) ? 0 : -1);
+		}
+	}
 }
-function addTableRow(tableId, data) {
+function clearTableRows(tableId) {
+	$id(tableId).innerHTML = "";
+}
+function addTableRow(tableId, data, insertTop) {	
+	
+	var newRow = $id(tableId).insertRow((insertTop) ? 0 : -1);
 
-	
-	if ($id(tableId).getElementsByTagName("tbody").length > 0)
-		var tblObject = $id(tableId).getElementsByTagName("tbody")[0];
-	else
-		var tblObject = $id(tableId)
-	
-	var newRow = tblObject.insertRow(-1);	
-	newRow.style.paddingLeft = "20px";
 	for (i in data) {			
 		var tmpCell = newRow.insertCell(-1);
 		if (is_array(data[i])) {
 			tmpCell.innerHTML = data[i][0];
 			tmpCell.draggable = data[i][1];
 			tmpCell.draggabletype = data[i][2];
-//				tmpCell.ondragstart = function(x) { x.dataTransfer.setData(this.draggabletype, '{"WebDomain":"'+document.domain+'"}'); }
 		} else {
 			tmpCell.innerHTML = data[i];
 		}
 	}
 	
 	newRow.ondragstart = function(x) { x.dataTransfer.setData(this.draggabletype, '{"WebDomain":"'+document.domain+'"}'); }
+
 	return newRow;
 }
 
@@ -226,23 +247,15 @@ function guid() {
     s4() + '-' + s4() + s4() + s4();
 }
 
+function getNumberBetween(bg,end) {
+	return Math.floor(Math.random() * (end+1)) + bg;
+}
 
-// Need to be use with Bootstrap 4.X
 function showToastMessage(message) {
 	var t = obj("div", "snackbar", "show").setValue(message).addTo(document.body);
 	setTimeout(function(){ t.className = t.className.replace("show", ""); t.destroy(); }, 3000);
-	
 }
-function activateToastMessage() {
-    // Get the snackbar DIV
-    var x = document.getElementById("snackbar");
 
-    // Add the "show" class to DIV
-    x.className = "show";
-
-    // After 3 seconds, remove the show class from DIV
-    setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
-}
 
 function userException(message, number) {
 	this.message = message;
@@ -260,7 +273,9 @@ function sleep(ms) {
 	  return null;
 	} else
 		return new Promise(resolve => setTimeout(resolve, ms));*/
+	return new Promise(resolve => setTimeout(resolve, ms));
 }
+
 function b64EncodeUnicode(str) {
     // first we use encodeURIComponent to get percent-encoded UTF-8,
     // then we convert the percent encodings into raw bytes which
@@ -269,6 +284,12 @@ function b64EncodeUnicode(str) {
         function toSolidBytes(match, p1) {
             return String.fromCharCode('0x' + p1);
     }));
+}
+
+function htmlEntities(str) {
+
+	return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+	
 }
 
 // Date and time function
@@ -352,7 +373,6 @@ function formatDate(unixTimeStamp) {
 	return date.getMonth()+1 + "/" + date.getDate() + "/" + date.getFullYear() + "  " + strTime;
 }
 
-
 // Cookies Management
 function addCookie(prefix, name, value, never_expire) {
 	if (never_expire == true)
@@ -377,4 +397,4 @@ function getCookie(prefix, name) {
 	return null;
 }
 
-
+// End
