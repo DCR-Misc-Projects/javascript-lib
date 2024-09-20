@@ -111,6 +111,7 @@ function obj(type, id, className) {
 	if (className != undefined)
 		d.className = className;
 	
+	// Add the obj into an existing DOMElement
 	d.addTo = function(parent) {
 		if (is_string(parent)) {
 			$id(parent).appendChild(this);
@@ -120,6 +121,7 @@ function obj(type, id, className) {
 		return this;
 	}
 	
+	// Add object into the obj
 	d.addObject = function(xObj) {
 		this.appendChild(xObj)
 		return this;
@@ -396,5 +398,7 @@ function getCookie(prefix, name) {
 	}
 	return null;
 }
+
+export { $id, obj };
 
 // End
